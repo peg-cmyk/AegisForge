@@ -1,96 +1,94 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-blue" alt="version">
-  <img src="https://img.shields.io/badge/size-271KB_(full)-blueviolet" alt="size">
-  <img src="https://img.shields.io/badge/dependencies-0-brightgreen" alt="deps">
-  <img src="https://img.shields.io/badge/license-WTFPL-orange" alt="license">
-  <img src="https://img.shields.io/badge/vibe-chaotic--good-ff69b4" alt="vibe">
+# AegisForge
+
+<p>
+  <img src="https://img.shields.io/badge/v1.1-blue" alt="version">
+  <img src="https://img.shields.io/badge/271KB-blueviolet" alt="size">
+  <img src="https://img.shields.io/badge/deps-0-brightgreen" alt="deps">
+  <img src="https://img.shields.io/badge/WTFPL-orange" alt="license">
 </p>
 
-# ⚔️ AegisForge
+ブラウザだけで動く動画編集エンジン。FFmpegなし、サーバーなし、外部依存ゼロ。
 
-**A browser-native video editor engine that does way too much for its size.**
-
-ブラウザだけで動く、サイズの割にやりすぎな動画エディタエンジン。
+A browser-native video editing engine. No FFmpeg, no server, zero dependencies.
 
 ---
 
-## What is this? / これ何？
+## 機能 / Features
 
-AegisForge is a zero-dependency, pure-browser video editing engine. No FFmpeg. No server. No `node_modules` black hole. Just ~271KB of minified JS that turns your browser into a surprisingly competent NLE.
+### 動画編集
+- マルチトラックタイムライン（マグネティックスナップ）
+- キーフレームアニメーション（ベジェ曲線、CatmullRom）
+- プリコンポジション、Undo/Redo（JSON Patch差分）
+- マルチカム編集、プロジェクトファイル（.aegis / OPFS自動保存）
 
-AegisForge はゼロ依存・純ブラウザ動画編集エンジンです。FFmpeg なし。サーバーなし。`node_modules` のブラックホールなし。約271KBのminified JSで、あなたのブラウザをそこそこ有能なNLEに変えます。
+### ネイティブMuxer（AegisMuxer）
+純JS/TS実装。FFmpeg不要。
 
-## ✨ Features / 機能
+| 形式 | 映像+音声 | 映像のみ | 音声のみ | 方式 |
+|------|:---------:|:--------:|:--------:|------|
+| MP4  | ✅ | ✅ | ✅ | fragmented / sequential |
+| MOV  | ✅ | ✅ | ✅ | fragmented / sequential |
+| WebM | ✅ | ✅ | — | EBML streaming |
+| MKV  | ✅ | ✅ | — | EBML streaming |
+| AVI  | ✅ | ✅ | — | RIFF + idx1 |
+| OGG  | — | — | ✅ | Ogg pages + CRC-32 |
+| MP3  | — | — | ✅ | passthrough |
+| GIF  | — | ✅ | — | NeuQuant + LZW |
+| APNG | — | ✅ | — | deflate |
+| WAV  | — | — | ✅ | PCM |
 
-### 🎬 Video Editing / 動画編集
-- Multi-track timeline with magnetic snapping — タイムラインにクリップを突っ込むだけ
-- Keyframe animation (Bézier curves!) — ベジェ曲線でヌルヌルアニメーション
-- Pre-composition — After Effects ごっこ
-- Undo/Redo with structural diffing — 無限にCtrl+Zできる安心感
+未対応フォーマット（FLV, TS, 3GP, WMV等）は明確なエラーメッセージを返します。
 
-### 🔄 Format Conversion / フォーマット変換
-- **Native muxing**: MP4 / MOV / WebM / MKV / AVI / OGG / MP3 / GIF / APNG / WAV — だいたい何でも吐ける
-- **Demuxing**: MP4, WebM, MKV, AVI, FLV, OGG — だいたい何でも食える
-- Direct-to-disk via OPFS — メモリが爆発しない（たぶん）
+### デマクサー
+MP4 / WebM / MKV / AVI / FLV / OGG
 
-### 🎨 Effects / エフェクト
-- **12 GPU blend modes** — multiply, screen, overlay, etc.
-- **Bloom** — everything looks better with bloom（何にでもブルーム足す人向け）
-- **ASCII art rendering** — because why not（なぜなら、できるから）
-- **Fractal generator** — Mandelbrot & Julia sets for your corporate video（会社のプレゼンにフラクタル）
-- **Glitch** — make it look intentionally broken（意図的に壊す）
-- **Chroma key** — green screen the old-fashioned way
-- **AI Segmentation** — green screen without the green screen (WebNN)
-- **Motion tracking** — GPU frame differencing
-- **Blur, Color, Distort, Luma Key, DOM overlay** — the usual suspects
+### エフェクト（WebGL2/WebGPU）
+Bloom, Blur, Color Grading (3D LUT), Distortion, Blend (25+モード), Fractal, Glitch, Luma Key, ASCII Art, DOM Overlay, Boomerang, Particle System
 
-### 🧠 ML / 機械学習
-- **AI Subject Cutout** — Real encoder-decoder CNN via WebNN API（本物のAI被写体切り抜き）
-- **Super Resolution** — ESPCN upscaling (bring your own weights)
-- **Optical Flow** — Lucas-Kanade via WebGPU compute shaders
-- **Beat Sync** — auto-cut to music because manual editing is for mortals
-- **Video Stabilization** — smooth operator via GL warping
-- **VJ Engine** — MIDI + audio-reactive visuals for your DJ career
+### オーディオ
+AudioWorklet, バイノーラル (HRTF), チップチューン, ルームトーン, スペクトログラム, FFT/IMDCT, 自動同期 (相互相関), リサンプラー (Kaiser窓Sinc)
 
-### 🔊 Audio / オーディオ
-- Mix, pan, normalize, reverb, echo, pitch shift, karaoke, bleep
-- Chiptune synthesizer — 8-bit dreams in 2026
-- Binaural audio, room tone generator, spectrogram, beat detection
-- Silence removal — finally, a use for FFT
+### AI / ML
+- WebNN推論（セグメンテーション、超解像）
+- オプティカルフロー（Lucas-Kanade / Farnebäck）
+- 手ブレ補正、ビートシンク、VJエンジン
 
-### 📦 Other Cool Stuff / その他
-- **SDF Text Rendering** — GPU-accelerated text with JFA distance fields
-- **Lottie animation** — After Effects animations without After Effects
-- **Subtitle parsing** — SRT & VTT with full cue positioning
-- **Particle system** — WebGL transform feedback go brrr
-- **Distributed rendering** — WebRTC swarm because one browser isn't enough
-- **Interactive sprite editor** — drag, rotate, pinch-zoom
-- **Adaptive quality scaling** — auto-downgrades when your GPU starts sweating
-- **Memory panic handler** — LRU texture eviction before the OOM reaper comes
+### テキスト
+SDF (符号付き距離場), Lottie, 字幕 (SRT/ASS/VTT)
 
-## 🔨 Build Tool / ビルドツール
+### その他
+- SWARM分散レンダリング（WebRTC）
+- インタラクティブ操作（パン/ズーム/クロップ）
+- 画面録画（MediaRecorder）
+- GPUフォールバック（WebGPU→WebGL2→WebGL1→CPU）
+- 区間木（O(log n)クリップクエリ）
+- フレームキャッシュ（GOP対応LRU）
+- ダイレクトトランスコーダ（ストリーミング変換）
+- Flipnote取り込み（KWZ/PPM）
 
-Don't want all 271KB? Fair enough. Pick only what you need:
+---
 
-全部いらない？わかる。必要なものだけ選んで：
+## ビルド
 
-**👉 [https://kikiemi.github.io/AegisForge/builder/](https://kikiemi.github.io/AegisForge/builder/)**
+```bash
+npm install
+npm run build    # dist/AegisForge.min.js (271KB)
+npm run dev      # watch mode
+```
 
-| Preset | Size | What you get |
-|--------|------|-------------|
-| `minimal` | ~31KB | Core + Timeline + Export — 最低限で動く |
-| `editor` | ~140KB | Full editing suite — ちゃんとしたエディタ |
-| `converter` | ~155KB | Format conversion focus — 変換特化 |
-| `effects` | ~62KB | All the eye candy — 目の保養 |
-| `full` | ~271KB | Everything and the kitchen sink — 全部入り |
+### カスタムビルド
 
-Or build custom presets via CLI:
+必要なモジュールだけ選んでビルド：
+
+**[https://kikiemi.github.io/AegisForge/builder/](https://kikiemi.github.io/AegisForge/builder/)**
 
 ```bash
 node build-presets.js my-preset src/core.ts src/effects/bloom.ts src/effects/glitch.ts
 ```
 
-## 🚀 Quick Start
+---
+
+## 使い方
 
 ```html
 <script src="AegisForge.min.js"></script>
@@ -100,82 +98,62 @@ core.config.width = 1920;
 core.config.height = 1080;
 core.config.fps = 30;
 
-// Load stuff / 素材を読み込む
 const img = await AegisForge.Img.load('cat.jpg');
 const aud = await AegisForge.Aud.load('bgm.mp3');
 
-// Add to timeline / タイムラインに追加
 core.input(img, { start: 0, duration: 5000 });
 core.input(aud, { start: 0, duration: 5000, layer: -1 });
 
-// Export / 書き出し
 const file = await core.save('output.mp4');
 </script>
 ```
 
-## 🎛️ Use Cases / 使い道
+---
 
-| Use Case | How | どうやって |
-|----------|-----|-----------|
-| **Video Editor** | Timeline + Effects + Export | タイムライン+エフェクト+書き出し |
-| **Format Converter** | Demux → Re-encode | デマックス→再エンコード |
-| **GIF Maker** | Import video → AnimatedGifEncoder | 動画→GIF変換器 |
-| **Thumbnail Generator** | Load video → Seek → Img.createFrame | 動画→シーク→サムネイル |
-| **Audio Processor** | Aud.load → normalize/reverb/echo → WAV | 音声加工パイプライン |
-| **Subtitle Burner** | parseSRT + subtitlePlugin | 字幕焼き込み |
-| **AI Background Removal** | AISegmentEngine + loadWeights | AI背景除去 |
-| **Live Recording** | MediaStreamRecorder → MP4/WebM | ライブ録画 |
-| **Batch Processing** | WorkerPool + parallel encode | バッチ処理 |
-| **VJ Performance** | VJEngine + MIDI + AudioReactive | VJパフォーマンス |
-
-## 🏗️ Architecture / 設計思想
+## 構造
 
 ```
-┌──────────────────────────────────────────────┐
-│  AegisCore (Timeline + Compositor + Export)   │
-├──────────┬──────────┬──────────┬─────────────┤
-│ Effects  │ ML/AI    │ Audio    │ Text        │
-│ (WebGL2) │ (WebNN)  │ (WebAud)│ (SDF/JFA)   │
-├──────────┴──────────┴──────────┴─────────────┤
-│  WebCodecs + AegisMuxer (MP4/MOV/MKV/AVI/OGG) │
-├──────────────────────────────────────────────┤
-│  Demuxers (MP4 / WebM / MKV / AVI / FLV/OGG) │
-└──────────────────────────────────────────────┘
-Zero dependencies. No npm install. Just vibes.
-依存ゼロ。npm install なし。バイブスだけ。
+src/
+├── core.ts              キーフレーム、ベジェ、タイムコード
+├── gl.ts                WebGL2/WebGPU レンダラー
+├── media.ts             WebCodecs パイプライン
+├── AegisMuxer.ts        MP4/MOV/WebM/MKV/AVI/OGG/MP3
+├── encoders.ts          GIF/WebP/APNG/WAV
+├── codec.ts             コーデック検出
+├── interactive.ts       パン/ズーム/クロップ
+├── recorder.ts          画面録画
+├── worker.ts            Worker合成
+├── core/
+│   ├── AegisCore.ts     メインエンジン
+│   ├── swarm.ts         分散レンダリング
+│   ├── transcoder.ts    ストリーミング変換
+│   ├── fast_pipeline.ts バッチレンダー
+│   ├── frame_cache.ts   GOP対応LRUキャッシュ
+│   └── interval_tree.ts AVL区間木
+├── demux/               MP4, WebM, MKV, AVI, FLV, OGG
+├── effects/             Bloom, Blur, Color, Glitch 等12種
+├── audio/               FFT, IMDCT, Worklet 等9種
+├── ml/                  WebNN, OptFlow, Segment 等7種
+├── text/                SDF, Lottie, Subtitle
+├── gpu/                 YUV変換, フォールバック, 色空間
+├── timeline/            Magnetic, Multicam, History, Project
+├── generators/          Particle
+└── extensions/          Pillow (Flipnote)
 ```
-
-## 📋 Browser Support / ブラウザ対応
-
-| Feature | Chrome | Firefox | Safari | Edge |
-|---------|--------|---------|--------|------|
-| Core editing | ✅ 94+ | ✅ 100+ | ✅ 16.4+ | ✅ 94+ |
-| WebCodecs | ✅ | ⚠️ Flag | ❌ | ✅ |
-| WebGPU | ✅ 113+ | ⚠️ Flag | ✅ 18+ | ✅ |
-| WebNN | ✅ 124+ | ❌ | ❌ | ✅ |
-
-## 📄 License / ライセンス
-
-```
-            DO WHAT THE F**K YOU WANT TO PUBLIC LICENSE
-                    Version 2, December 2004
-
- Everyone is permitted to copy and distribute verbatim or modified
- copies of this license document, and changing it is allowed as long
- as the name is changed.
-
-            DO WHAT THE F**K YOU WANT TO PUBLIC LICENSE
-   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
-
-  0. You just DO WHAT THE F**K YOU WANT TO.
-```
-
-No copyright. No attribution required. No lawyers. Do literally whatever you want with this code. Sell it, fork it, print it out and make origami, we don't care.
-
-著作権なし。帰属表示不要。弁護士なし。このコードで文字通り好きなことをしてください。売っても、フォークしても、印刷して折り紙にしてもOK。
 
 ---
 
-<p align="center">
-  <sub>Built with mass amounts of mass amount of mass amount of mass amount ∞ mass amounts of mass amounts of mass amounts and mass amounts</sub>
-</p>
+## ブラウザ対応
+
+| 機能 | Chrome | Firefox | Safari | Edge | IE |
+|------|--------|---------|--------|------|------|
+| コア | ✅ 94+ | ✅ 100+ | ✅ 16.4+ | ✅ 94+ | lol |
+| WebCodecs | ✅ | ⚠️ Flag | ❌ | ✅ | lol |
+| WebGPU | ✅ 113+ | ⚠️ Flag | ✅ 18+ | ✅ | lol |
+| WebNN | ✅ 124+ | ❌ | ❌ | ✅ | lol |
+
+---
+
+## ライセンス
+
+WTFPL v2 — 好きにしてください。
