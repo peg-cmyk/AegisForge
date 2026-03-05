@@ -276,10 +276,10 @@ const AegisMuxer = (() => {
         err: (e: Error) => void; fmt!: string; sink!: Sink; sc!: Scribe;
         vt!: Track | null; at!: Track | null;
         sealed!: boolean; cTime!: number; dataOff!: number; seq!: number; tBase!: number; wClus!: number;
-         _aviIdx!: { tag: string; flags: number; offset: number; size: number }[];
-         _aviChunks!: Uint8Array[];
-         _oggSerial!: number; _oggPageSeq!: number; _oggGranule!: number;
-         [key: string]: unknown;
+        _aviIdx!: { tag: string; flags: number; offset: number; size: number }[];
+        _aviChunks!: Uint8Array[];
+        _oggSerial!: number; _oggPageSeq!: number; _oggGranule!: number;
+
 
         constructor(options: EngineOptions) {
             this.opt = { format: "mp4", mode: "fragmented", autoSync: true, maxFragDur: 2.0, ...options };
@@ -294,8 +294,8 @@ const AegisMuxer = (() => {
             this.vt = null; this.at = null;
             this.sealed = false; this.cTime = Math.floor(Date.now() / 1000) + EPOCH_OFFSET;
             this.dataOff = 0; this.seq = 1; this.tBase = -1; this.wClus = -1;
-             this._aviIdx = []; this._aviChunks = [];
-             this._oggSerial = (Math.random() * 0x7FFFFFFF) >>> 0; this._oggPageSeq = 0; this._oggGranule = 0;
+            this._aviIdx = []; this._aviChunks = [];
+            this._oggSerial = (Math.random() * 0x7FFFFFFF) >>> 0; this._oggPageSeq = 0; this._oggGranule = 0;
 
             if (this.opt.video) {
                 this.vt = new Track(1, true, this.opt.video);
@@ -338,9 +338,9 @@ const AegisMuxer = (() => {
                     this.sc.ebm("1654AE6B");
                     if (this.vt) {
                         this.sc.ebm("AE"); this.sc.ebm("D7"); this.sc.u8(this.vt.id); this.sc.end(); this.sc.ebm("83"); this.sc.u8(1); this.sc.end();
-                        const cName = this.vt.codec.includes("vp9") ? "V_VP9" : (this.vt.codec.includes("vp8") ? "V_VP8" : (this.vt.codec.includes("av1") ? "V_AV1" : (this.vt.codec.includes("hevc") || this.vt.codec.includes("hvc1") ? "V_MPEGH/ISO/HEVC" : "V_MPEG4/ISO/AVC")));
+                        const cName = (this.vt.codec.includes("vp9") || this.vt.codec.includes("vp09")) ? "V_VP9" : (this.vt.codec.includes("vp8") ? "V_VP8" : (this.vt.codec.includes("av1") || this.vt.codec.includes("av01") ? "V_AV1" : (this.vt.codec.includes("hevc") || this.vt.codec.includes("hvc1") || this.vt.codec.includes("hev1") ? "V_MPEGH/ISO/HEVC" : "V_MPEG4/ISO/AVC")));
                         this.sc.ebm("86"); this.sc.str(cName); this.sc.end();
-                        
+
                         if (this.vt.cfgData) {
                             this.sc.ebm("63A2"); this.sc.bytes(this.vt.cfgData); this.sc.end();
                         }
@@ -350,23 +350,23 @@ const AegisMuxer = (() => {
                         this.sc.ebm("AE"); this.sc.ebm("D7"); this.sc.u8(this.at.id); this.sc.end(); this.sc.ebm("83"); this.sc.u8(2); this.sc.end();
                         this.sc.ebm("86"); this.sc.str(this.at.codec.includes("opus") ? "A_OPUS" : (this.at.codec.includes("vorbis") ? "A_VORBIS" : "A_AAC")); this.sc.end();
                         if (this.at.codec.includes("opus")) {
-                            
+
                             this.sc.ebm("63A2");
-                            this.sc.str("OpusHead");  
-                            this.sc.u8(1);             
-                            this.sc.u8(this.at.ch);    
-                            
+                            this.sc.str("OpusHead");
+                            this.sc.u8(1);
+                            this.sc.u8(this.at.ch);
+
                             this.sc.u8(0x00); this.sc.u8(0x0F);
-                            
+
                             const sr = this.at.sr;
                             this.sc.u8(sr & 0xFF); this.sc.u8((sr >> 8) & 0xFF); this.sc.u8((sr >> 16) & 0xFF); this.sc.u8((sr >> 24) & 0xFF);
-                            
+
                             this.sc.u8(0); this.sc.u8(0);
-                            this.sc.u8(0);             
+                            this.sc.u8(0);
                             this.sc.end();
                         }
                         if (this.at.codec.includes("aac") || this.at.codec.includes("mp4a")) {
-                            
+
                             if (this.at.cfgData) {
                                 this.sc.ebm("63A2"); this.sc.bytes(this.at.cfgData); this.sc.end();
                             }
@@ -379,7 +379,7 @@ const AegisMuxer = (() => {
                 } else if (this.fmt === "ogg") {
                     this._initOGG();
                 } else if (this.fmt === "mp3") {
-                    
+
                 }
                 this._flushSc();
             } catch (e: unknown) { this.err(e instanceof Error ? e : new Error(String(e))); }
@@ -481,7 +481,7 @@ const AegisMuxer = (() => {
             } else if (this.fmt === "mp3") {
                 this._flushMP3();
             } else {
-                
+
             }
         }
 
@@ -585,11 +585,11 @@ const AegisMuxer = (() => {
             this.sc.end();
 
             let moofSize = this.sc.p;
-            
+
             let totalMdatPayload = 0;
             for (let x of trunOffs) for (let f of x.t.queue) totalMdatPayload += f.d!.byteLength;
-            
-            let trackDataStart = moofSize + 8; 
+
+            let trackDataStart = moofSize + 8;
             for (let x of trunOffs) {
                 this.sc.view.setUint32(x.p, trackDataStart);
                 for (let f of x.t.queue) trackDataStart += f.d!.byteLength;
@@ -612,12 +612,12 @@ const AegisMuxer = (() => {
             if (this.sealed) return; this.sealed = true;
             try {
                 if (this.fmt === "avi") {
-                     this._finalizeAVI();
-                 } else if (this.fmt === "ogg") {
-                     this._flushOGG(); this._writeOGGPage(new Uint8Array(0), true);
-                 } else if (this.fmt === "mp3") {
-                     this._flushMP3();
-                 } else if (this.opt.mode === "fragmented") {
+                    this._finalizeAVI();
+                } else if (this.fmt === "ogg") {
+                    this._flushOGG(); this._writeOGGPage(new Uint8Array(0), true);
+                } else if (this.fmt === "mp3") {
+                    this._flushMP3();
+                } else if (this.opt.mode === "fragmented") {
                     if (this.fmt === "mp4" || this.fmt === "mov") {
                         this._writeFrag();
                         let tks = [this.vt, this.at].filter(Boolean) as Track[];
@@ -800,144 +800,140 @@ const AegisMuxer = (() => {
             }
             this.sc.end();
         }
+
+        _initAVI() {
+        }
+
+        _finalizeAVI() {
+            this._flushInterleaved();
+            const tks = [this.vt, this.at].filter(t => t);
+            const fps = this.vt ? this.vt.fps : 25;
+            const usPerFrame = Math.round(1e6 / fps);
+            const vFrames = this.vt ? this.vt.stsz.length : 0;
+            const aFrames = this.at ? this.at.stsz.length : 0;
+            const w = this.vt ? this.vt.w : 0, h = this.vt ? this.vt.h : 0;
+
+            let totalChunkSize = 0;
+            for (const c of this._aviChunks) totalChunkSize += c.byteLength;
+            const moviData = new Uint8Array(totalChunkSize);
+            let wPos = 0;
+            for (const c of this._aviChunks) { moviData.set(c, wPos); wPos += c.byteLength; }
+            this._aviChunks = [];
+            const sc = this.sc; sc.reset();
+
+            sc.rif("RIFF"); sc.str("AVI ");
+            sc.rif("LIST"); sc.str("hdrl");
+            sc.rif("avih");
+            sc.u32le(usPerFrame); sc.u32le(0); sc.u32le(0); sc.u32le(0x10 | 0x20);
+            sc.u32le(Math.max(vFrames, aFrames)); sc.u32le(0); sc.u32le(tks.length); sc.u32le(1024 * 1024);
+            sc.u32le(w); sc.u32le(h); sc.u32le(0); sc.u32le(0); sc.u32le(0); sc.u32le(0);
+            sc.end();
+            if (this.vt) {
+                sc.rif("LIST"); sc.str("strl");
+                sc.rif("strh"); sc.str("vids");
+                const vc = this.vt.codec;
+                const fourcc = (vc.includes('h264') || vc.includes('avc')) ? 'H264' : (vc.includes('vp09') || vc.includes('vp9')) ? 'VP90' : (vc.includes('vp8') ? 'VP80' : (vc.includes('av01') || vc.includes('av1') ? 'AV01' : 'MJPG'));
+                sc.str(fourcc); sc.u32le(0); sc.u16le(0); sc.u16le(0); sc.u32le(0);
+                sc.u32le(1); sc.u32le(Math.round(fps)); sc.u32le(0); sc.u32le(vFrames);
+                sc.u32le(1024 * 1024); sc.u32le(0xFFFFFFFF); sc.u32le(0);
+                sc.u16le(0); sc.u16le(0); sc.u16le(w); sc.u16le(h);
+                sc.end();
+                sc.rif("strf"); sc.u32le(40); sc.u32le(w); sc.u32le(h);
+                sc.u16le(1); sc.u16le(24); sc.str(fourcc); sc.u32le(w * h * 3);
+                sc.u32le(0); sc.u32le(0); sc.u32le(0); sc.u32le(0);
+                sc.end(); sc.end();
+            }
+            if (this.at) {
+                sc.rif("LIST"); sc.str("strl");
+                const isAAC = this.at.codec.includes('aac') || this.at.codec.includes('mp4a');
+                sc.rif("strh"); sc.str("auds"); sc.u32le(isAAC ? 0xFF : 0x55);
+                sc.u32le(0); sc.u16le(0); sc.u16le(0); sc.u32le(0);
+                sc.u32le(1); sc.u32le(this.at.sr); sc.u32le(0); sc.u32le(aFrames);
+                sc.u32le(12288); sc.u32le(0xFFFFFFFF); sc.u32le(0);
+                sc.u16le(0); sc.u16le(0); sc.u16le(0); sc.u16le(0);
+                sc.end();
+                sc.rif("strf"); sc.u16le(isAAC ? 0xFF : 0x55);
+                sc.u16le(this.at.ch); sc.u32le(this.at.sr);
+                sc.u32le(isAAC ? this.at.sr * this.at.ch * 2 : 16000);
+                sc.u16le(isAAC ? 1 : this.at.ch * 2); sc.u16le(isAAC ? 16 : 0);
+                if (isAAC && this.at.cfgData) { sc.u16le(this.at.cfgData.byteLength); sc.bytes(this.at.cfgData); }
+                else sc.u16le(0);
+                sc.end(); sc.end();
+            }
+            sc.end();
+            sc.rif("LIST"); sc.str("movi"); sc.chunk(moviData); sc.end();
+            sc.rif("idx1");
+            let off = 4;
+            for (const e of this._aviIdx) { sc.str(e.tag); sc.u32le(e.flags); sc.u32le(off); sc.u32le(e.size); off += e.size + 8; }
+            sc.end();
+            sc.end();
+            this._flushSc();
+        }
+
+        _initOGG() {
+            const at = this.at;
+            if (!at) { this.err(new Error('[AegisMuxer] OGG requires an audio track')); return; }
+
+            const oh = new Uint8Array(19);
+            oh.set([0x4F, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64]);
+            oh[8] = 1; oh[9] = at.ch; oh[10] = 0; oh[11] = 0x0F;
+            oh[12] = at.sr & 0xFF; oh[13] = (at.sr >> 8) & 0xFF; oh[14] = (at.sr >> 16) & 0xFF; oh[15] = (at.sr >> 24) & 0xFF;
+            oh[16] = 0; oh[17] = 0; oh[18] = 0;
+            this._writeOGGPage(oh, false, true);
+
+            const tag = new Uint8Array(20);
+            tag.set([0x4F, 0x70, 0x75, 0x73, 0x54, 0x61, 0x67, 0x73]);
+            tag[8] = 5; tag.set([0x41, 0x65, 0x67, 0x69, 0x73], 12);
+            this._writeOGGPage(tag, false, false);
+        }
+
+        _writeOGGPage(data: Uint8Array, isEOS: boolean, isBOS?: boolean) {
+            const segCount = Math.max(1, Math.ceil(data.length / 255));
+            const headSz = 27 + segCount;
+            const page = new Uint8Array(headSz + data.length);
+            const v = new DataView(page.buffer);
+            page.set([0x4F, 0x67, 0x67, 0x53]);
+            page[4] = 0; page[5] = (isBOS ? 0x02 : 0) | (isEOS ? 0x04 : 0);
+            v.setUint32(6, this._oggGranule >>> 0, true); v.setUint32(10, 0, true);
+            v.setUint32(14, this._oggSerial, true); v.setUint32(18, this._oggPageSeq++, true);
+            v.setUint32(22, 0, true); page[26] = segCount;
+            let rem = data.length;
+            for (let i = 0; i < segCount; i++) { page[27 + i] = Math.min(rem, 255); rem -= Math.min(rem, 255); }
+            page.set(data, headSz);
+            let crc = 0;
+            for (let i = 0; i < page.length; i++) crc = ((crc << 8) ^ OGG_CRC[((crc >>> 24) & 0xFF) ^ page[i]]) >>> 0;
+            v.setUint32(22, crc, true);
+            try { this.sink.write(page); } catch (e) { this.err(e instanceof Error ? e : new Error(String(e))); }
+        }
+
+        _flushOGG() {
+            const at = this.at;
+            if (!at) return;
+            while (at.queue.length) {
+                const f = at.queue.shift();
+                if (!f) break;
+                this._oggGranule += 960;
+                this._writeOGGPage(f.d!, false);
+                f.d = null;
+            }
+        }
+
+        _flushMP3() {
+            const at = this.at;
+            if (!at) return;
+            while (at.queue.length) {
+                const f = at.queue.shift();
+                if (!f) break;
+                if (f.d && f.d.byteLength > 0) {
+                    try { this.sink.write(f.d); } catch (e: unknown) { this.err(e instanceof Error ? e : new Error(String(e))); }
+                }
+                f.d = null;
+            }
+        }
     }
 
-
-     
-     Engine.prototype._initAVI = function() {
-         
-     };
-
-     Engine.prototype._finalizeAVI = function() {
-         this._flushInterleaved(); 
-         const tks = [this.vt, this.at].filter(t => t);
-         const fps = this.vt ? this.vt.fps : 25;
-         const usPerFrame = Math.round(1e6 / fps);
-         const vFrames = this.vt ? this.vt.stsz.length : 0;
-         const aFrames = this.at ? this.at.stsz.length : 0;
-         const w = this.vt ? this.vt.w : 0, h = this.vt ? this.vt.h : 0;
-
-         
-         let totalChunkSize = 0;
-         for (const c of this._aviChunks) totalChunkSize += c.byteLength;
-         const moviData = new Uint8Array(totalChunkSize);
-         let wPos = 0;
-         for (const c of this._aviChunks) { moviData.set(c, wPos); wPos += c.byteLength; }
-         this._aviChunks = [];
-         const sc = this.sc; sc.reset();
-
-         sc.rif("RIFF"); sc.str("AVI ");
-         sc.rif("LIST"); sc.str("hdrl");
-         sc.rif("avih");
-         sc.u32le(usPerFrame); sc.u32le(0); sc.u32le(0); sc.u32le(0x10 | 0x20);
-         sc.u32le(Math.max(vFrames, aFrames)); sc.u32le(0); sc.u32le(tks.length); sc.u32le(1024*1024);
-         sc.u32le(w); sc.u32le(h); sc.u32le(0); sc.u32le(0); sc.u32le(0); sc.u32le(0);
-         sc.end();
-         if (this.vt) {
-             sc.rif("LIST"); sc.str("strl");
-             sc.rif("strh"); sc.str("vids");
-             const vc = this.vt.codec;
-             const fourcc = (vc.includes('h264') || vc.includes('avc')) ? 'H264' : (vc.includes('vp8') ? 'VP80' : 'MJPG');
-             sc.str(fourcc); sc.u32le(0); sc.u16le(0); sc.u16le(0); sc.u32le(0);
-             sc.u32le(1); sc.u32le(Math.round(fps)); sc.u32le(0); sc.u32le(vFrames);
-             sc.u32le(1024*1024); sc.u32le(0xFFFFFFFF); sc.u32le(0);
-             sc.u16le(0); sc.u16le(0); sc.u16le(w); sc.u16le(h);
-             sc.end();
-             sc.rif("strf"); sc.u32le(40); sc.u32le(w); sc.u32le(h);
-             sc.u16le(1); sc.u16le(24); sc.str(fourcc); sc.u32le(w*h*3);
-             sc.u32le(0); sc.u32le(0); sc.u32le(0); sc.u32le(0);
-             sc.end(); sc.end();
-         }
-         if (this.at) {
-             sc.rif("LIST"); sc.str("strl");
-             const isAAC = this.at.codec.includes('aac') || this.at.codec.includes('mp4a');
-             sc.rif("strh"); sc.str("auds"); sc.u32le(isAAC ? 0xFF : 0x55);
-             sc.u32le(0); sc.u16le(0); sc.u16le(0); sc.u32le(0);
-             sc.u32le(1); sc.u32le(this.at.sr); sc.u32le(0); sc.u32le(aFrames);
-             sc.u32le(12288); sc.u32le(0xFFFFFFFF); sc.u32le(0);
-             sc.u16le(0); sc.u16le(0); sc.u16le(0); sc.u16le(0);
-             sc.end();
-             sc.rif("strf"); sc.u16le(isAAC ? 0xFF : 0x55);
-             sc.u16le(this.at.ch); sc.u32le(this.at.sr);
-             sc.u32le(isAAC ? this.at.sr*this.at.ch*2 : 16000);
-             sc.u16le(isAAC ? 1 : this.at.ch*2); sc.u16le(isAAC ? 16 : 0);
-             if (isAAC && this.at.cfgData) { sc.u16le(this.at.cfgData.byteLength); sc.bytes(this.at.cfgData); }
-             else sc.u16le(0);
-             sc.end(); sc.end();
-         }
-         sc.end(); 
-         sc.rif("LIST"); sc.str("movi"); sc.chunk(moviData); sc.end();
-         sc.rif("idx1");
-         let off = 4;
-         for (const e of this._aviIdx) { sc.str(e.tag); sc.u32le(e.flags); sc.u32le(off); sc.u32le(e.size); off += e.size + 8; }
-         sc.end();
-         sc.end(); 
-         this._flushSc();
-     };
-
-     
-     const OGG_CRC = new Uint32Array(256);
-     for (let i = 0; i < 256; i++) { let c = i << 24; for (let j = 0; j < 8; j++) c = (c << 1) ^ (c & 0x80000000 ? 0x04C11DB7 : 0); OGG_CRC[i] = c >>> 0; }
-
-     Engine.prototype._initOGG = function() {
-         const at = this.at;
-         if (!at) { this.err(new Error('[AegisMuxer] OGG requires an audio track')); return; }
-         
-         const oh = new Uint8Array(19);
-         oh.set([0x4F,0x70,0x75,0x73,0x48,0x65,0x61,0x64]); 
-         oh[8]=1; oh[9]=at.ch; oh[10]=0; oh[11]=0x0F;
-         oh[12]=at.sr&0xFF; oh[13]=(at.sr>>8)&0xFF; oh[14]=(at.sr>>16)&0xFF; oh[15]=(at.sr>>24)&0xFF;
-         oh[16]=0; oh[17]=0; oh[18]=0;
-         this._writeOGGPage(oh, false, true);
-         
-         const tag = new Uint8Array(20);
-         tag.set([0x4F,0x70,0x75,0x73,0x54,0x61,0x67,0x73]); 
-         tag[8]=5; tag.set([0x41,0x65,0x67,0x69,0x73], 12); 
-         this._writeOGGPage(tag, false, false);
-     };
-
-     Engine.prototype._writeOGGPage = function(data, isEOS, isBOS) {
-         const segCount = Math.max(1, Math.ceil(data.length / 255));
-         const headSz = 27 + segCount;
-         const page = new Uint8Array(headSz + data.length);
-         const v = new DataView(page.buffer);
-         page.set([0x4F,0x67,0x67,0x53]); 
-         page[4] = 0; page[5] = (isBOS ? 0x02 : 0) | (isEOS ? 0x04 : 0);
-         v.setUint32(6, this._oggGranule >>> 0, true); v.setUint32(10, 0, true);
-         v.setUint32(14, this._oggSerial, true); v.setUint32(18, this._oggPageSeq++, true);
-         v.setUint32(22, 0, true); page[26] = segCount;
-         let rem = data.length;
-         for (let i = 0; i < segCount; i++) { page[27+i] = Math.min(rem, 255); rem -= Math.min(rem, 255); }
-         page.set(data, headSz);
-         let crc = 0;
-         for (let i = 0; i < page.length; i++) crc = ((crc << 8) ^ OGG_CRC[((crc >>> 24) & 0xFF) ^ page[i]]) >>> 0;
-         v.setUint32(22, crc, true);
-         try { this.sink.write(page); } catch(e) { this.err(e instanceof Error ? e : new Error(String(e))); }
-     };
-
-     Engine.prototype._flushOGG = function() {
-         const at = this.at;
-         if (!at) return;
-         while (at.queue.length) {
-             const f = at.queue.shift();
-             this._oggGranule += 960;
-             this._writeOGGPage(f.d, false);
-             f.d = null;
-         }
-     };
-
-     
-     Engine.prototype._flushMP3 = function() {
-         const at = this.at;
-         if (!at) return;
-         while (at.queue.length) {
-             const f = at.queue.shift();
-             if (f.d && f.d.byteLength > 0) {
-                 try { this.sink.write(f.d); } catch(e) { this.err(e instanceof Error ? e : new Error(String(e))); }
-             }
-             f.d = null;
-         }
-     };
+    const OGG_CRC = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) { let c = i << 24; for (let j = 0; j < 8; j++) c = (c << 1) ^ (c & 0x80000000 ? 0x04C11DB7 : 0); OGG_CRC[i] = c >>> 0; }
 
     return { MemSink, StreamSink, FileSink, WebStreamSink, Engine };
 })();
